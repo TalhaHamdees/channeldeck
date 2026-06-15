@@ -4,7 +4,7 @@
 
 ChannelDeck is a self-hosted analytics platform for creators who run multiple YouTube channels. Instead of toggling between channels in YouTube Studio, connect every channel once and get Studio-grade analytics — views, watch time, subscribers, traffic sources, audience demographics, and estimated revenue — combined across your whole portfolio and per channel.
 
-Built on the official YouTube Analytics & Data APIs. Your data syncs nightly into your own Postgres database; nothing is shared with any third-party service. Runs entirely on free tiers (Vercel + Neon).
+Built on the official YouTube Analytics & Data APIs. Your data syncs nightly into your own Postgres database; nothing is shared with any third-party service. Runs entirely on free tiers (Vercel + Supabase).
 
 ---
 
@@ -40,7 +40,7 @@ flowchart LR
         OAUTH[Google OAuth 2.0]
     end
     subgraph Vercel
-        APP[Next.js App] --> DB[(Neon Postgres)]
+        APP[Next.js App] --> DB[(Supabase Postgres)]
         CRON[Nightly Cron] --> SYNC[Sync Engine<br/>job queue + backfill]
     end
     OAUTH -- per-channel refresh tokens<br/>AES-256-GCM encrypted --> DB
@@ -58,7 +58,7 @@ flowchart LR
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router, TypeScript) |
-| Database | Neon Postgres + Drizzle ORM |
+| Database | Supabase Postgres + Drizzle ORM |
 | Auth | Auth.js v5 (Google provider, JWT sessions, email allowlist) |
 | UI | Tailwind CSS v4, shadcn/ui, Recharts |
 | Hosting & scheduling | Vercel + Vercel Cron |
@@ -66,7 +66,7 @@ flowchart LR
 
 ## Getting started
 
-Full click-by-click instructions (Google Cloud project, OAuth consent screen, Neon, Vercel): **[SETUP.md](./SETUP.md)**.
+Full click-by-click instructions (Google Cloud project, OAuth consent screen, Supabase, Vercel): **[SETUP.md](./SETUP.md)**.
 
 The short version:
 
@@ -84,7 +84,7 @@ Then sign in, go to **Settings → Add channel**, and authorize each channel onc
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | Neon Postgres connection string (pooled) |
+| `DATABASE_URL` | Supabase Postgres connection string (pooled) |
 | `AUTH_SECRET` | Auth.js session signing secret |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth client (dashboard login + channel connect) |
 | `ALLOWED_EMAIL` | The only Google account allowed to sign in |

@@ -35,16 +35,16 @@ There are three accounts to set up (all free): **Google Cloud** (API access), **
    - `https://YOUR-APP.vercel.app/api/channels/callback`
 4. Create → copy the **Client ID** and **Client secret**.
 
-## 2. Neon database (~3 min)
+## 2. Supabase database (~3 min)
 
-1. Go to https://console.neon.tech → sign up (GitHub/Google login).
-2. Create a project (any name, region close to you).
-3. On the project dashboard, copy the **connection string** (the pooled one, starts with `postgresql://`).
+1. Go to https://supabase.com → sign up (GitHub/Google login).
+2. **New project** → name it `channeldeck`, set a database password (save it), pick a region close to you → create. Wait ~1 min for it to provision.
+3. **Project Settings → Database → Connection string** → copy the **Transaction pooler** URI (port `6543`). For local dev the direct connection works too; the Transaction pooler is what Vercel needs.
 
 ## 3. Local configuration (~3 min)
 
 1. In the project folder, copy `.env.example` to `.env` and fill in:
-   - `DATABASE_URL` = Neon connection string
+   - `DATABASE_URL` = Supabase connection string
    - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` = from step 1c
    - `ALLOWED_EMAIL` = your Google email (the only account that can log in)
    - `AUTH_SECRET` = any long random string (or run `openssl rand -base64 32`)
@@ -71,7 +71,7 @@ There are three accounts to set up (all free): **Google Cloud** (API access), **
 5. Add the two production redirect URIs to the Google OAuth client (step 1c, items 3–4) using your real Vercel URL.
 6. Visit the production URL on your phone → sign in → done. The nightly sync runs automatically at 09:00 UTC (after YouTube's analytics day closes in Pacific Time).
 
-> Note: channels you connected locally are stored in the shared Neon database, so they appear in production immediately — no need to reconnect.
+> Note: channels you connected locally are stored in the shared Supabase database, so they appear in production immediately — no need to reconnect.
 
 ---
 

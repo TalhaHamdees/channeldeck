@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./schema";
 
 let _db: ReturnType<typeof createDb> | null = null;
@@ -9,8 +9,10 @@ function createDb() {
   if (!url) {
     throw new Error("DATABASE_URL is not set");
   }
-  const sql = neon(url);
-  return drizzle(sql, { schema });
+  // prepare:false is required for Supabase's transaction-mode pooler (used on
+  // Vercel serverless); it's harmless on direct/session connections too.
+  const client = postgres(url, { prepare: false });
+  return drizzle(client, { schema });
 }
 
 // Lazily initialized so the app can build and show the setup screen

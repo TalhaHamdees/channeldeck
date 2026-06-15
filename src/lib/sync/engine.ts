@@ -108,7 +108,8 @@ async function claimNextJob(): Promise<SyncJob | null> {
               status, attempts, last_error AS "lastError",
               created_at AS "createdAt"
   `);
-  const rows = result.rows as unknown as SyncJob[];
+  // postgres-js returns the rows array directly (no `.rows` wrapper).
+  const rows = result as unknown as SyncJob[];
   return rows[0] ?? null;
 }
 
@@ -243,7 +244,7 @@ export async function processQueue(
   const remainingRes = await db.execute(
     sql`SELECT count(*)::int AS n FROM sync_jobs WHERE status = 'pending'`
   );
-  const remaining = (remainingRes.rows[0] as { n: number }).n;
+  const remaining = (remainingRes[0] as unknown as { n: number }).n;
 
   await db
     .update(schema.syncRuns)
