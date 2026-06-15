@@ -130,7 +130,7 @@ export default async function PortfolioPage({
               data={series}
               dataKey="views"
               label="Views"
-              valueFormatter={fmtNumber}
+              format="number"
             />
           </CardContent>
         </Card>
@@ -144,7 +144,7 @@ export default async function PortfolioPage({
               dataKey="revenue"
               label="Revenue"
               color="var(--chart-2)"
-              valueFormatter={(v) => fmtCurrency(v)}
+              format="currency"
             />
           </CardContent>
         </Card>

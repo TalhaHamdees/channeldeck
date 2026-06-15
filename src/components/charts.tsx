@@ -20,6 +20,14 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { fmtCurrency, fmtNumber } from "@/lib/format";
+
+// Functions can't be passed from Server Components to this Client Component,
+// so callers pass a format name and we resolve the formatter here.
+type ValueFormat = "number" | "currency";
+function formatter(format: ValueFormat | undefined) {
+  return format === "currency" ? fmtCurrency : fmtNumber;
+}
 
 const PIE_COLORS = [
   "var(--chart-1)",
@@ -42,15 +50,16 @@ export function TimeSeriesChart<T extends { date: string }>({
   dataKey,
   label,
   color = "var(--chart-1)",
-  valueFormatter,
+  format,
 }: {
   data: T[];
   dataKey: Extract<keyof T, string>;
   label: string;
   color?: string;
-  valueFormatter?: (v: number) => string;
+  format?: ValueFormat;
 }) {
   const config: ChartConfig = { [dataKey]: { label, color } };
+  const fmt = formatter(format);
   return (
     <ChartContainer config={config} className="h-56 w-full">
       <AreaChart data={data} margin={{ left: 4, right: 4, top: 4 }}>
@@ -68,9 +77,7 @@ export function TimeSeriesChart<T extends { date: string }>({
           tickLine={false}
           axisLine={false}
           fontSize={11}
-          tickFormatter={(v: number) =>
-            valueFormatter ? valueFormatter(v) : v.toLocaleString()
-          }
+          tickFormatter={(v: number) => fmt(v)}
         />
         <ChartTooltip
           content={

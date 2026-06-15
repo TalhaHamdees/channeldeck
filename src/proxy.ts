@@ -1,7 +1,11 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { DEV_AUTH_BYPASS } from "@/lib/dev";
 
 export default auth((req) => {
+  // Local-only: skip all auth gating when the dev bypass is enabled.
+  if (DEV_AUTH_BYPASS) return NextResponse.next();
+
   const { pathname } = req.nextUrl;
 
   const isPublic =

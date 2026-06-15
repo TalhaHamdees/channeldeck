@@ -11,7 +11,9 @@ function createDb() {
   }
   // prepare:false is required for Supabase's transaction-mode pooler (used on
   // Vercel serverless); it's harmless on direct/session connections too.
-  const client = postgres(url, { prepare: false });
+  // max is kept small so we stay well under Supabase's free-tier pooler client
+  // limit, leaving headroom for CLI scripts (migrations, seeding).
+  const client = postgres(url, { prepare: false, max: 5, idle_timeout: 20 });
   return drizzle(client, { schema });
 }
 

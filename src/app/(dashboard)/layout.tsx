@@ -1,5 +1,6 @@
 import { auth, signOut } from "@/auth";
 import { isConfigured } from "@/lib/config";
+import { DEV_AUTH_BYPASS, DEV_USER } from "@/lib/dev";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   if (!isConfigured()) redirect("/setup");
-  const session = await auth();
+  const session = DEV_AUTH_BYPASS ? { user: DEV_USER } : await auth();
   if (!session?.user) redirect("/login");
 
   return (

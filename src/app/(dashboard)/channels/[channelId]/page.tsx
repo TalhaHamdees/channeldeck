@@ -180,7 +180,7 @@ export default async function ChannelPage({
                 data={series}
                 dataKey="views"
                 label="Views"
-                valueFormatter={fmtNumber}
+                format="number"
               />
             </TabsContent>
             <TabsContent value="watch">
@@ -189,7 +189,7 @@ export default async function ChannelPage({
                 dataKey="watchMinutes"
                 label="Minutes watched"
                 color="var(--chart-3)"
-                valueFormatter={fmtNumber}
+                format="number"
               />
             </TabsContent>
             <TabsContent value="subs">
@@ -198,7 +198,7 @@ export default async function ChannelPage({
                 dataKey="netSubs"
                 label="Net subscribers"
                 color="var(--chart-4)"
-                valueFormatter={fmtNumber}
+                format="number"
               />
             </TabsContent>
             <TabsContent value="revenue">
@@ -207,7 +207,7 @@ export default async function ChannelPage({
                 dataKey="revenue"
                 label="Revenue"
                 color="var(--chart-2)"
-                valueFormatter={(v) => fmtCurrency(v)}
+                format="currency"
               />
             </TabsContent>
           </Tabs>
