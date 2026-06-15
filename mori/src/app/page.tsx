@@ -17,8 +17,14 @@ export default function TodayPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-12">
       <header className="space-y-3">
+        {/* Gate the date on `ready` (mounted) so it never bakes a build-time
+            date into static HTML and mismatches the visitor's actual day. */}
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          {formatLong(key)}
+          {ready ? (
+            formatLong(key)
+          ) : (
+            <span className="inline-block h-3 w-48 animate-pulse rounded bg-muted align-middle" />
+          )}
         </p>
         <h1 className="font-serif text-3xl leading-tight tracking-tight sm:text-4xl">
           This morning, write the obituary of yesterday.
@@ -37,7 +43,13 @@ export default function TodayPage() {
           >
             ❝
           </span>
-          <p className="font-serif text-lg leading-snug">{prompt}</p>
+          <p className="min-h-7 font-serif text-lg leading-snug">
+            {ready ? (
+              prompt
+            ) : (
+              <span className="inline-block h-4 w-3/4 animate-pulse rounded bg-muted align-middle" />
+            )}
+          </p>
         </CardContent>
       </Card>
 
