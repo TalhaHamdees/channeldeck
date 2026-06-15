@@ -41,7 +41,11 @@ export function RecordProvider({ children }: { children: React.ReactNode }) {
   // Avoid writing back the empty placeholder before the first read completes.
   const hydrated = useRef(false);
 
+  // Read the persisted record once, on mount. localStorage isn't available
+  // during SSR, so this deliberate post-hydration sync is the correct place —
+  // hence the disable of set-state-in-effect for these two intentional calls.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setState(loadState());
     setReady(true);
     hydrated.current = true;

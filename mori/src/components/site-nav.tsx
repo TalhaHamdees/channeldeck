@@ -17,7 +17,10 @@ function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const [dark, setDark] = useState(true);
 
+  // The real theme lives on <html> (set by the pre-paint inline script). Sync
+  // React to the DOM once mounted; this on-mount read is intentional.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     setDark(document.documentElement.classList.contains("dark"));
   }, []);

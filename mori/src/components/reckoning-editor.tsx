@@ -59,6 +59,9 @@ export function ReckoningEditor({ dateKey }: { dateKey: string }) {
   // Load the existing entry once the store is ready (or when the day changes).
   useEffect(() => {
     if (!ready) return;
+    // Seed the form from the persisted entry once storage is ready; this
+    // on-load sync into local form state is intentional.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEpitaph(existing?.epitaph ?? "");
     setTruth(existing?.truth ?? "");
     setAvoided(existing?.avoided ?? "");
