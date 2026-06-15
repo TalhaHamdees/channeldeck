@@ -114,29 +114,30 @@ export async function getChannelSummaries(
   range: DateRange
 ): Promise<ChannelSummary[]> {
   const db = getDb();
-  const channels = await db
-    .select()
-    .from(schema.channels)
-    .orderBy(schema.channels.sortOrder, schema.channels.title);
-
-  const totalsRows = await db
-    .select({
-      channelId: schema.channelMetricsDaily.channelId,
-      ...totalsSelect,
-    })
-    .from(schema.channelMetricsDaily)
-    .where(rangeFilter(range))
-    .groupBy(schema.channelMetricsDaily.channelId);
-
-  const sparkRows = await db
-    .select({
-      channelId: schema.channelMetricsDaily.channelId,
-      date: schema.channelMetricsDaily.date,
-      views: schema.channelMetricsDaily.views,
-    })
-    .from(schema.channelMetricsDaily)
-    .where(rangeFilter(range))
-    .orderBy(schema.channelMetricsDaily.date);
+  // These three are independent — run them concurrently to cut round-trips.
+  const [channels, totalsRows, sparkRows] = await Promise.all([
+    db
+      .select()
+      .from(schema.channels)
+      .orderBy(schema.channels.sortOrder, schema.channels.title),
+    db
+      .select({
+        channelId: schema.channelMetricsDaily.channelId,
+        ...totalsSelect,
+      })
+      .from(schema.channelMetricsDaily)
+      .where(rangeFilter(range))
+      .groupBy(schema.channelMetricsDaily.channelId),
+    db
+      .select({
+        channelId: schema.channelMetricsDaily.channelId,
+        date: schema.channelMetricsDaily.date,
+        views: schema.channelMetricsDaily.views,
+      })
+      .from(schema.channelMetricsDaily)
+      .where(rangeFilter(range))
+      .orderBy(schema.channelMetricsDaily.date),
+  ]);
 
   const totalsByChannel = new Map(
     totalsRows.map((r) => [r.channelId, toTotals(r)])
