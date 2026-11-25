@@ -8,24 +8,17 @@ import {
 } from "@/lib/google/youtube";
 import { and, eq, sql } from "drizzle-orm";
 import type { Channel, SyncJob } from "@/db/schema";
+import {
+  dailyWindow,
+  daysAgo,
+  planBackfillChunks,
+  trafficSlices,
+} from "./windows";
 
-const BACKFILL_DAYS = 365;
-const CHUNK_DAYS = 90;
-const DAILY_OVERLAP_DAYS = 5; // re-pull window so lagging revenue self-corrects
 export const PRESET_RANGES = [7, 28, 90, 365] as const;
 const TOP_VIDEOS_PER_RANGE = 25;
 
-// ---------- date helpers (YYYY-MM-DD, UTC) ----------
-
-function toDateStr(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function daysAgo(n: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return toDateStr(d);
-}
+type NewSyncJob = typeof schema.syncJobs.$inferInsert;
 
 // ---------- queue management ----------
 
@@ -36,24 +29,19 @@ export async function enqueueBackfill(channelId: string): Promise<void> {
     .delete(schema.syncJobs)
     .where(eq(schema.syncJobs.channelId, channelId));
 
-  const jobs = [];
-  for (let offset = 0; offset < BACKFILL_DAYS; offset += CHUNK_DAYS) {
-    const to = daysAgo(offset);
-    const from = daysAgo(Math.min(offset + CHUNK_DAYS - 1, BACKFILL_DAYS));
-    jobs.push({
-      channelId,
-      jobType: "backfill_chunk" as const,
-      dateFrom: from,
-      dateTo: to,
-    });
-  }
+  // One clock reading for the whole plan, so every chunk agrees on "today".
+  const now = new Date();
+  const jobs: NewSyncJob[] = planBackfillChunks(now).map((window) => ({
+    channelId,
+    jobType: "backfill_chunk",
+    ...window,
+  }));
   // Also one "daily" job so snapshots (top videos, geo, demographics)
   // populate immediately after connect.
   jobs.push({
     channelId,
-    jobType: "daily" as const,
-    dateFrom: daysAgo(DAILY_OVERLAP_DAYS),
-    dateTo: daysAgo(0),
+    jobType: "daily",
+    ...dailyWindow(now),
   });
   await db.insert(schema.syncJobs).values(jobs);
 }
@@ -65,6 +53,7 @@ export async function enqueueDailyJobs(): Promise<number> {
     .from(schema.channels)
     .where(eq(schema.channels.tokenStatus, "active"));
 
+  const window = dailyWindow();
   let queued = 0;
   for (const ch of active) {
     const pending = await db
@@ -82,8 +71,7 @@ export async function enqueueDailyJobs(): Promise<number> {
     await db.insert(schema.syncJobs).values({
       channelId: ch.id,
       jobType: "daily",
-      dateFrom: daysAgo(DAILY_OVERLAP_DAYS),
-      dateTo: daysAgo(0),
+      ...window,
     });
     queued++;
   }
@@ -388,17 +376,10 @@ async function syncChannelRange(
   }
 
   // 4) Traffic sources, in ≤31-day slices to stay under response row limits.
-  let sliceStart = new Date(`${from}T00:00:00Z`);
-  const rangeEnd = new Date(`${to}T00:00:00Z`);
-  while (sliceStart <= rangeEnd) {
-    const sliceEnd = new Date(sliceStart);
-    sliceEnd.setUTCDate(sliceEnd.getUTCDate() + 30);
-    const sFrom = toDateStr(sliceStart);
-    const sTo = toDateStr(sliceEnd > rangeEnd ? rangeEnd : sliceEnd);
-
+  for (const slice of trafficSlices(from, to)) {
     const traffic = await analyticsQuery(accessToken, channel.id, {
-      startDate: sFrom,
-      endDate: sTo,
+      startDate: slice.dateFrom,
+      endDate: slice.dateTo,
       dimensions: ["day", "insightTrafficSourceType"],
       metrics: ["views", "estimatedMinutesWatched"],
     });
@@ -425,8 +406,6 @@ async function syncChannelRange(
         });
       rows++;
     }
-    sliceStart = new Date(sliceEnd);
-    sliceStart.setUTCDate(sliceStart.getUTCDate() + 1);
   }
 
   return rows;

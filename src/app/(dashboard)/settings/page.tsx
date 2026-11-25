@@ -91,6 +91,7 @@ export default async function SettingsPage({
             </CardDescription>
           </div>
           {/* full page navigation (not client-side) so the redirect to Google works */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- see above */}
           <a
             href="/api/channels/connect"
             className={buttonVariants({ size: "sm" })}
@@ -138,6 +139,8 @@ export default async function SettingsPage({
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
                     {c.tokenStatus !== "active" ? (
+                      // Full page navigation so the redirect to Google works.
+                      // eslint-disable-next-line @next/next/no-html-link-for-pages
                       <a
                         href="/api/channels/connect"
                         className={buttonVariants({
