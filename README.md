@@ -100,9 +100,30 @@ Then sign in, go to **Settings → Add channel**, and authorize each channel onc
 ```bash
 npm run dev                # local dev server
 npm run build              # production build
+npm test                   # unit tests (Vitest)
+npm run lint               # ESLint
 npx drizzle-kit migrate    # apply DB migrations
 npx drizzle-kit generate   # regenerate migrations after schema changes
 ```
+
+## Testing
+
+```bash
+npm test                   # run the suite once
+npx vitest                 # watch mode
+```
+
+52 tests cover the sync engine ([src/lib/sync/](src/lib/sync/)) and the cron route that drives it. They need no network access and no credentials. Postgres is [PGlite](https://pglite.dev) (real Postgres compiled to WebAssembly, running in-process) with the project's own Drizzle migrations applied, so the queue's SQL runs for real: job claiming, upsert conflict targets and the backfill-complete check. Google's OAuth and YouTube APIs are replaced by a deterministic fake, and the clock is frozen at a fixed date.
+
+| Area | What the tests check |
+|---|---|
+| Backfill planning | Five chunks (4 × 90 days + 6) from today back to exactly 365 days ago, with no gaps or overlaps. This is checked for every start date across two years, leap day included. |
+| Nightly window | The re-pull covers the five previous days plus today, in UTC calendar days. The dates are the same whatever the server's time zone, and the window crosses month and year boundaries. Traffic reports are split into slices of at most 31 days. |
+| Idempotency | Running the same sync twice leaves identical rows. The nightly window overlaps the backfill without duplicating any day. Late revenue and view revisions overwrite the trailing days only. Snapshot tables are replaced, not appended to. |
+| Fault isolation | A revoked token, or a 401 in the middle of a sync, flags only that channel as `revoked` while the other channels finish. A transient error is retried up to 3 attempts. A failing revenue or impressions query does not fail the job. |
+| Time budget and self-chaining | No new job is claimed after the 250 s budget, and a job already started is allowed to finish. A follow-up run resumes exactly where the last one stopped. The cron route chains a new invocation (after responding) only when work remains, and only a real cron tick queues the nightly jobs. |
+
+The tests live in `src/**/__tests__/`. CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs typecheck, lint and tests on every push and pull request.
 
 ## Project structure
 
@@ -112,6 +133,7 @@ src/
   lib/google/oauth.ts           # channel OAuth: auth URL, code exchange, refresh
   lib/google/youtube.ts         # typed Data API + Analytics API client
   lib/sync/engine.ts            # job queue, backfill chunks, nightly sync
+  lib/sync/windows.ts           # date-window planning (backfill chunks, nightly window)
   lib/queries.ts                # dashboard aggregation queries
   app/(dashboard)/page.tsx      # portfolio overview
   app/(dashboard)/channels/[channelId]/   # per-channel drill-down
